@@ -1,0 +1,32 @@
+# CETR Index — Python dependencies
+# Install: pip install -r requirements.txt
+
+# Data processing
+pandas==2.2.2
+numpy==1.26.4
+scipy==1.13.0
+openpyxl==3.1.2          # Excel parsing (ECCC GHG inventory)
+pdfplumber==0.11.0        # CEA reliability report PDF extraction
+xlrd==2.0.1               # Legacy Excel format support
+
+# HTTP + data fetching
+requests==2.31.0
+urllib3==2.2.1
+
+# Database
+sqlalchemy==2.0.30        # Optional: if you switch from CSV to SQLite
+
+# Development + quality
+pytest==8.2.0
+pytest-cov==5.0.0         # Coverage reporting
+black==24.4.2              # Code formatter
+ruff==0.4.4                # Linter (faster than flake8)
+python-dotenv==1.0.1       # .env file support
+
+# Notebooks (exploration only, not in pipeline)
+jupyter==1.0.0
+plotly==5.22.0
+matplotlib==3.9.0
+
+# Type hints
+typing-extensions==4.11.0

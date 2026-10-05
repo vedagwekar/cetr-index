@@ -1,11 +1,39 @@
+# Python
+venv/
 __pycache__/
 *.pyc
-.venv/
-*.egg-info/
+*.pyo
 .pytest_cache/
-.ipynb_checkpoints/
-data/raw/*
-data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
+*.egg-info/
+dist/
+build/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Data — raw files can be large; processed outputs are committed
+data/raw/*.csv
+data/raw/*.xlsx
+data/raw/*.zip
+data/raw/*.pdf
+# But keep the ingest log and manual CEA file
+!data/raw/ingest_log.json
+!data/raw/cea_reliability_manual.csv
+
+# Environment
+.env
+.env.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Placeholder files that keep empty data folders in git
+!data/**/.gitkeep

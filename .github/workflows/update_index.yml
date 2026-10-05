@@ -1,0 +1,119 @@
+name: Quarterly Index Update
+
+on:
+  schedule:
+    # Run at 9:00 UTC on the 1st of January, April, July, October
+    # This aligns with Stats Canada's quarterly data releases
+    - cron: '0 9 1 1,4,7,10 *'
+
+  # Allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      force_refresh:
+        description: 'Force re-download of all data (ignore cache)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    
+    # Allow the workflow to commit and push updated data
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests (pre-flight check)
+        run: |
+          pytest tests/test_normalization.py -v --tb=short
+          echo "Pre-flight tests passed ✓"
+
+      - name: Create data directories
+        run: |
+          mkdir -p data/raw data/processed data/index
+
+      - name: Fetch Stats Canada data
+        run: |
+          python -m pipeline.ingest.statcan_client
+        env:
+          FORCE_REFRESH: ${{ github.event.inputs.force_refresh || 'false' }}
+
+      - name: Fetch CER electricity data
+        run: |
+          python -m pipeline.ingest.cer_client
+
+      - name: Run cleaning pipeline (all 5 metrics)
+        run: |
+          python -m pipeline.run_all --phase clean
+
+      - name: Compute index scores
+        run: |
+          python -m pipeline.score.index_calculator
+
+      - name: Run full test suite
+        run: |
+          pytest tests/ -v --tb=short
+          echo "All tests passed ✓"
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ 2>/dev/null || true
+          # Only commit if there are actual changes
+          if git diff --staged --quiet; then
+            echo "No data changes detected — skipping commit"
+          else
+            QUARTER=$(python3 -c "
+          from datetime import datetime
+          m = datetime.now().month
+          q = (m - 1) // 3 + 1
+          print(f'{datetime.now().year}-Q{q}')
+            ")
+            git commit -m "data: quarterly update $QUARTER"
+            git push
+            echo "Data committed and pushed ✓"
+          fi
+
+      - name: Generate update summary
+        run: |
+          python3 - << 'EOF'
+          import json, sys
+          from pathlib import Path
+
+          latest_path = Path("data/index/cetr_index_latest.json")
+          if not latest_path.exists():
+              print("No latest index data found")
+              sys.exit(0)
+
+          with open(latest_path) as f:
+              data = json.load(f)
+
+          print(f"\n{'='*50}")
+          print(f"CETR INDEX UPDATE SUMMARY")
+          print(f"{'='*50}")
+          print(f"Updated: {data['meta']['last_updated']}")
+          print(f"Latest year: {data['meta']['latest_year']}")
+          print(f"\nProvincial scores:")
+          for row in sorted(data['data'], key=lambda x: -x.get('cetr_index', 0)):
+              score = row.get('cetr_index', 0)
+              bar = '█' * int(score / 5)
+              print(f"  {row['province']}  {bar:<20} {score:5.1f}  {row.get('risk_level', '')}")
+          EOF

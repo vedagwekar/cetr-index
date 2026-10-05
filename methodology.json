@@ -1,0 +1,121 @@
+{
+  "name": "Canadian Energy Transition Risk Index (CETR Index)",
+  "version": "1.0.0",
+  "last_updated": "2026-05-24",
+  "description": "A quantitative, open-source composite indicator scoring Canada's ten provinces on their exposure to risks arising from the global energy transition. Higher scores indicate greater risk.",
+  "scale": "0 (lowest risk) to 100 (highest risk)",
+  "normalization_method": "percentile_rank",
+  "normalization_rationale": "Percentile rank selected over z-score because N=10 provinces is too small for the normality assumption. Robust to Alberta's extreme outlier values on the stranded asset component. Recommended by OECD Handbook on Constructing Composite Indicators (2008) for small-N comparisons.",
+  "aggregation_method": "weighted_arithmetic_mean",
+  "components": {
+    "carbon_intensity": {
+      "weight": 0.25,
+      "label": "Carbon Intensity",
+      "description": "Electricity sector CO2 emissions per megawatt-hour generated. Captures how carbon-locked the province's current power grid is — higher intensity means greater exposure to carbon pricing and regulatory risk as the grid must decarbonize.",
+      "formula": "tCO2_electricity_sector / total_electricity_generation_MWh",
+      "unit": "tCO2/MWh",
+      "direction": "higher = more risk",
+      "source_primary": "ECCC National GHG Inventory, Annex 13 Table A13-5 (Electricity and Heat Production by Province)",
+      "source_secondary": "Canada Energy Regulator — Electricity Generation Dataset",
+      "source_url_primary": "https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/inventory.html",
+      "source_url_secondary": "https://www.cer-rec.gc.ca/open/energy/electricity-generation-dataset.csv",
+      "update_frequency": "Annual (ECCC released ~April, ~18 month lag)",
+      "data_lag_years": 2
+    },
+    "stranded_asset_risk": {
+      "weight": 0.25,
+      "label": "Stranded Asset Risk",
+      "description": "Fossil fuel industries (oil & gas extraction, coal mining, petroleum manufacturing, support services) as a percentage of total provincial GDP. Captures economic exposure if fossil fuel assets are devalued by policy, technology shift, or reduced demand under the energy transition.",
+      "formula": "sum(fossil_fuel_industry_GDP) / total_provincial_GDP * 100",
+      "unit": "% of provincial GDP",
+      "direction": "higher = more risk",
+      "source_primary": "Statistics Canada Table 36-10-0402-01 — GDP by industry by province (annual)",
+      "source_url_primary": "https://www150.statcan.gc.ca/t1/tbl1/en/dtbl/downloadTbl/csvDownload?pid=3610040201",
+      "naics_codes_included": ["211", "2111", "21111", "21112", "212114", "213118", "324"],
+      "naics_labels": [
+        "Oil and gas extraction",
+        "Oil and gas extraction (sub)",
+        "Crude petroleum extraction",
+        "Natural gas extraction",
+        "Bituminous coal mining",
+        "Services to oil and gas extraction",
+        "Petroleum and coal products manufacturing"
+      ],
+      "update_frequency": "Annual (released ~8 months after reference year)",
+      "data_lag_years": 1
+    },
+    "grid_reliability": {
+      "weight": 0.20,
+      "label": "Grid Reliability",
+      "description": "SAIDI (System Average Interruption Duration Index) — average hours of power outage per customer per year. Higher unreliability increases the economic cost of electrification and reduces the viability of transitioning to electric heating and transport.",
+      "formula": "sum(outage_duration_minutes * customers_affected) / total_customers_served / 60",
+      "unit": "hours/customer/year",
+      "direction": "higher = more risk",
+      "source_primary": "Canadian Electricity Association — Electricity Reliability Report (Annual)",
+      "source_url_primary": "https://canelect.ca/electricity-reliability-in-canada/",
+      "access_method": "PDF extraction (manual download, annual release ~Q1)",
+      "update_frequency": "Annual",
+      "data_lag_years": 1,
+      "note": "Only source requiring manual PDF extraction. Flag in pipeline if format changes."
+    },
+    "energy_poverty": {
+      "weight": 0.15,
+      "label": "Energy Poverty",
+      "description": "Percentage of provincial households spending more than 6% of gross household income on energy (electricity + heating fuel). Higher energy poverty rates indicate vulnerable households that would be most exposed to transition costs (carbon pricing, utility rate increases from grid investment).",
+      "formula": "households_spending_gt_6pct_income_on_energy / total_households * 100",
+      "unit": "% of households",
+      "threshold_pct": 6,
+      "threshold_rationale": "6% threshold is the standard low-income energy burden threshold used by NRCan, Efficiency Canada, and academic literature. Above 6% is considered energy poverty.",
+      "direction": "higher = more risk",
+      "source_primary": "Statistics Canada Survey of Household Spending, Table 11-10-0223-01",
+      "source_url_primary": "https://www150.statcan.gc.ca/t1/tbl1/en/dtbl/downloadTbl/csvDownload?pid=1110022301",
+      "update_frequency": "Annual (lags ~2 years)",
+      "data_lag_years": 2
+    },
+    "workforce_exposure": {
+      "weight": 0.15,
+      "label": "Workforce Exposure",
+      "description": "Fossil fuel industry employment as a percentage of total provincial workforce. Captures human capital risk — provinces with high fossil fuel employment face greater social disruption, retraining costs, and political resistance to transition.",
+      "formula": "fossil_fuel_employment / total_provincial_employment * 100",
+      "unit": "% of provincial workforce",
+      "direction": "higher = more risk",
+      "source_primary": "Statistics Canada Labour Force Survey, Table 14-10-0023-01",
+      "source_url_primary": "https://www150.statcan.gc.ca/t1/tbl1/en/dtbl/downloadTbl/csvDownload?pid=1410002301",
+      "naics_codes_included": ["211", "2111", "21111", "21112", "212114", "213118"],
+      "update_frequency": "Monthly (use annual average)",
+      "data_lag_years": 0
+    }
+  },
+  "provinces": {
+    "AB": "Alberta",
+    "BC": "British Columbia",
+    "MB": "Manitoba",
+    "NB": "New Brunswick",
+    "NL": "Newfoundland and Labrador",
+    "NS": "Nova Scotia",
+    "ON": "Ontario",
+    "PE": "Prince Edward Island",
+    "QC": "Quebec",
+    "SK": "Saskatchewan"
+  },
+  "excluded_territories": ["YT", "NT", "NU"],
+  "excluded_territories_rationale": "Insufficient electricity grid data and fundamentally different energy systems (diesel microgrids). Planned for v2.",
+  "sensitivity_analysis": {
+    "methods_compared": ["percentile_rank", "z_score", "min_max", "entropy_weighted"],
+    "target_spearman_correlation": 0.90,
+    "description": "Index scores computed under all four normalization methods. Methodology considered robust if Spearman rank correlation between any two methods exceeds 0.90."
+  },
+  "monetary_valuation": {
+    "included": true,
+    "description": "Supplementary monetary valuation of stranded asset risk expressed as % of provincial GDP. Not used in primary index score.",
+    "method": "Carbon budget approach following Carbon Tracker methodology",
+    "reference": "Carbon Tracker Initiative (2021); Caldecott et al. (2016)"
+  },
+  "references": {
+    "oecd_handbook": "OECD/JRC (2008). Handbook on Constructing Composite Indicators: Methodology and User Guide. OECD Publishing.",
+    "wef_eti": "Singh et al. (2019). The energy transitions index: An analytic framework. Energy Strategy Reviews, 26.",
+    "tcfd": "TCFD (2018). Recommendations of the Task Force on Climate-related Financial Disclosures.",
+    "carbon_tracker": "Carbon Tracker Initiative (2021). Stranded Assets.",
+    "pembina": "Pembina Institute. Climate change and the financial risk of stranded assets."
+  }
+}
