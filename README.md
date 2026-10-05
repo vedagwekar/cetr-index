@@ -22,6 +22,7 @@ The CETR Index is an open-source Python pipeline that pulls public data from **S
 - [Design decisions](#design-decisions)
 - [Limitations](#limitations)
 - [Roadmap](#roadmap)
+- [Project history](#project-history)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -289,6 +290,27 @@ No changes to the scoring code are needed.
 - [ ] Sensitivity analysis on weights and normalization methods
 - [ ] Additional indicators: royalty dependence, household energy costs, adaptive capacity
 - [ ] Interactive map and charts
+
+---
+
+## Project history
+
+### Why the first commit contains so much
+
+If you look at the commit history, you'll see the project structure, indicator definitions, scoring engine, tests, and this README all arrived in a single commit on **October 4, 2026**. That's not because it was all written that day.
+
+Work on the CETR Index started in **mid-2026**, but the early stages happened outside of version control:
+
+- **Research:** reading about how composite indices are built and how transition risk is defined in climate finance.
+- **Indicator selection:** deciding which measures actually capture exposure, and which Statistics Canada and CER datasets could support them.
+- **Methodology:** choosing the normalization method, the pillar structure, and the default weights.
+- **Drafting:** working out the scoring logic and the tidy data format in local notes and files.
+
+Most of this was thinking and planning rather than code, so it lived in notes instead of a repository. Once the design settled into something concrete, this repository was created to move development into the open, and the existing work was committed as the starting point.
+
+### Going forward
+
+From here on, development happens publicly in small, incremental commits, starting with the Statistics Canada and CER ingestion modules listed in the [Roadmap](#roadmap). The commit history from this point is the real record of how the project is built.
 
 ---
 
